@@ -241,7 +241,7 @@ window.initMistralSolver = function (config) {
         <div id="ms-card">
             <div id="ms-header" title="Giữ chuột để kéo di chuyển">
                 <div class="ms-title-main">Giải bài tập</div>
-                <div class="ms-title-sub">Apple-Dra</div>
+                <div class="ms-title-sub">꧁༺Apple-Dra༻꧂</div>
                 <button id="ms-min-btn" title="Thu gọn / Mở rộng">−</button>
             </div>
             <div class="ms-top-row">
