@@ -299,10 +299,21 @@ window.initMistralSolver = function (config) {
     });
     window.addEventListener('mouseup', () => { isDragging = false; });
 
-    // Copy đáp án
+    // Copy chỉ lấy phần đáp án, tự động bỏ "**Đáp án:**" và dấu "**"
     copyBtn.addEventListener('click', () => {
         if (!lastRawAnswer) return;
-        navigator.clipboard.writeText(lastRawAnswer).then(() => {
+        let textToCopy = lastRawAnswer;
+
+        // Chỉ lấy phần nội dung đứng sau chữ "Đáp án:" (nếu có)
+        const match = textToCopy.match(/(?:\*\*)?Đáp án\s*:?(?:\*\*)?\s*([\s\S]*)$/i);
+        if (match && match[1].trim()) {
+            textToCopy = match[1];
+        }
+
+        // Xóa bỏ toàn bộ dấu ** in đậm và khoảng trắng thừa
+        textToCopy = textToCopy.replace(/\*\*/g, '').trim();
+
+        navigator.clipboard.writeText(textToCopy).then(() => {
             copyBtn.textContent = '✓ Đã chép';
             setTimeout(() => { copyBtn.textContent = '📋 Copy'; }, 1500);
         });
