@@ -5,6 +5,7 @@ window.initMistralSolver = function (config) {
 
     const API_KEY = config.apiKey || '';
     const LOGO_URL = config.logoUrl || 'https://cdn-icons-png.flaticon.com/512/4712/4712035.png';
+    const FB_URL = config.fbUrl || 'https://facebook.com';
     const API_URL = 'https://api.mistral.ai/v1/chat/completions';
     const MODELS = ['pixtral-12b-2409', 'mistral-small-latest'];
 
@@ -18,7 +19,7 @@ window.initMistralSolver = function (config) {
     katexCss.href = 'https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css';
     document.head.appendChild(katexCss);
 
-    // CSS Glassmorphism
+    // CSS giao diện theo bố cục mới
     const style = document.createElement('style');
     style.textContent = `
         #ms-root {
@@ -27,60 +28,118 @@ window.initMistralSolver = function (config) {
             right: 20px;
             z-index: 2147483647;
             font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-            width: 380px;
+            width: 340px;
             color: #f8fafc;
             user-select: none;
-            transition: opacity 0.2s ease;
         }
         #ms-card {
-            background: rgba(15, 23, 42, 0.8);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.14);
-            border-radius: 16px;
-            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.1);
-            overflow: hidden;
+            background: rgba(15, 23, 42, 0.86);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            border: 1.5px solid rgba(255, 255, 255, 0.18);
+            border-radius: 24px;
+            box-shadow: 0 16px 36px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            position: relative;
         }
         #ms-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 10px 14px;
-            background: rgba(255, 255, 255, 0.04);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            text-align: center;
             cursor: grab;
+            padding: 2px 24px 4px;
+            position: relative;
         }
         #ms-header:active { cursor: grabbing; }
-        .ms-brand {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 13.5px;
-            font-weight: 700;
-            letter-spacing: 0.3px;
-            color: #f1f5f9;
+        .ms-title-main {
+            font-size: 16px;
+            font-weight: 800;
+            color: #ffffff;
+            letter-spacing: 0.4px;
+            line-height: 1.25;
         }
-        .ms-logo-wrap {
-            position: relative;
+        .ms-title-sub {
+            font-size: 13px;
+            font-weight: 700;
+            background: linear-gradient(90deg, #fb923c, #facc15);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 0.8px;
+            margin-top: 2px;
+        }
+        #ms-min-btn {
+            position: absolute;
+            top: 0;
+            right: 0;
             width: 24px;
             height: 24px;
+            border: none;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.08);
+            color: #cbd5e1;
+            cursor: pointer;
+            font-size: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
         }
-        .ms-logo {
-            width: 24px;
-            height: 24px;
-            border-radius: 6px;
+        #ms-min-btn:hover { background: rgba(255, 255, 255, 0.18); color: #fff; }
+
+        /* Hàng giữa: Nút Giải (trái) + Ảnh Logo (phải) */
+        .ms-top-row {
+            display: flex;
+            align-items: stretch;
+            justify-content: space-between;
+            gap: 12px;
+            height: 52px;
+        }
+        #ms-solve-btn {
+            flex: 1;
+            border: none;
+            border-radius: 14px;
+            background: linear-gradient(135deg, #f97316, #ea580c);
+            color: #fff;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            box-shadow: 0 4px 14px rgba(234, 88, 12, 0.4);
+            transition: all 0.18s ease;
+        }
+        #ms-solve-btn:hover:not(:disabled) {
+            filter: brightness(1.1);
+            transform: translateY(-1px);
+        }
+        #ms-solve-btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+        .ms-img-box {
+            width: 96px;
+            border-radius: 14px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .ms-img-box img {
+            width: 100%;
+            height: 100%;
             object-fit: cover;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
         }
         .ms-dot {
             position: absolute;
-            bottom: -2px;
-            right: -2px;
-            width: 8px;
-            height: 8px;
+            top: 5px;
+            right: 5px;
+            width: 9px;
+            height: 9px;
             border-radius: 50%;
             background: #64748b;
             border: 1.5px solid #0f172a;
@@ -90,82 +149,75 @@ window.initMistralSolver = function (config) {
             background: #10b981;
             box-shadow: 0 0 8px #10b981;
         }
-        .ms-actions {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-        .ms-btn {
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 12.5px;
-            font-weight: 600;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-            transition: all 0.18s ease;
-        }
-        .ms-btn-primary {
-            background: linear-gradient(135deg, #f97316, #ea580c);
-            color: #fff;
-            padding: 6px 14px;
-            box-shadow: 0 4px 12px rgba(234, 88, 12, 0.35);
-        }
-        .ms-btn-primary:hover:not(:disabled) {
-            filter: brightness(1.1);
-            transform: translateY(-1px);
-        }
-        .ms-btn-primary:disabled {
-            opacity: 0.65;
-            cursor: not-allowed;
-        }
-        .ms-btn-icon {
-            background: rgba(255, 255, 255, 0.08);
-            color: #cbd5e1;
-            width: 28px;
-            height: 28px;
-            padding: 0;
-        }
-        .ms-btn-icon:hover {
-            background: rgba(255, 255, 255, 0.18);
-            color: #fff;
-        }
-        #ms-body {
-            display: none;
-            flex-direction: column;
-        }
-        #ms-body.open { display: flex; }
+
+        /* Khung nội dung lớn ở giữa */
         #ms-result {
-            max-height: 400px;
+            min-height: 120px;
+            max-height: 300px;
             overflow-y: auto;
             overflow-x: auto;
-            padding: 14px 16px;
+            background: rgba(2, 6, 23, 0.65);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 14px;
+            padding: 12px 14px;
             font-size: 14px;
-            line-height: 1.65;
+            line-height: 1.6;
             color: #f1f5f9;
             word-break: break-word;
             user-select: text;
+            box-sizing: border-box;
         }
-        #ms-result::-webkit-scrollbar { width: 6px; height: 6px; }
+        #ms-result::-webkit-scrollbar { width: 5px; height: 5px; }
         #ms-result::-webkit-scrollbar-thumb {
             background: rgba(148, 163, 184, 0.35);
             border-radius: 99px;
         }
+        .ms-placeholder {
+            color: #94a3b8;
+            font-style: italic;
+            font-size: 13.5px;
+        }
+
+        /* Chân khung: Copy (trái) + Support: FB (phải) */
         #ms-footer {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 8px 14px;
-            background: rgba(0, 0, 0, 0.2);
-            border-top: 1px solid rgba(255, 255, 255, 0.06);
-            font-size: 11.5px;
+            font-size: 12px;
             color: #94a3b8;
+            padding: 0 2px;
         }
+        #ms-copy-btn {
+            background: rgba(255, 255, 255, 0.08);
+            color: #cbd5e1;
+            border: none;
+            border-radius: 7px;
+            padding: 4px 8px;
+            font-size: 11.5px;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+        #ms-copy-btn:hover { background: rgba(255, 255, 255, 0.18); color: #fff; }
+        .ms-support a {
+            color: #38bdf8;
+            font-weight: 700;
+            text-decoration: none;
+        }
+        .ms-support a:hover { text-decoration: underline; }
+
+        /* Trạng thái thu gọn */
+        #ms-card.minimized .ms-top-row,
+        #ms-card.minimized #ms-result,
+        #ms-card.minimized #ms-footer {
+            display: none;
+        }
+        #ms-card.minimized {
+            padding: 10px 14px;
+        }
+
         .ms-spinner {
-            width: 13px;
-            height: 13px;
+            width: 14px;
+            height: 14px;
             border: 2px solid rgba(255, 255, 255, 0.3);
             border-top-color: #fff;
             border-radius: 50%;
@@ -176,49 +228,53 @@ window.initMistralSolver = function (config) {
         .ms-loading-box {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
             color: #cbd5e1;
-            font-size: 13.5px;
         }
     `;
     document.head.appendChild(style);
 
-    // Giao diện (đã thêm Logo, bỏ nút Key)
+    // Cấu trúc HTML khớp hình vẽ
     const root = document.createElement('div');
     root.id = 'ms-root';
     root.innerHTML = `
         <div id="ms-card">
             <div id="ms-header" title="Giữ chuột để kéo di chuyển">
-                <div class="ms-brand">
-                    <div class="ms-logo-wrap">
-                        <img class="ms-logo" src="${LOGO_URL}" alt="Logo" />
-                        <span id="ms-dot" class="ms-dot" title="Chưa kết nối màn hình"></span>
-                    </div>
-                    <span>AI Solver</span>
-                </div>
-                <div class="ms-actions">
-                    <button id="ms-solve-btn" class="ms-btn ms-btn-primary" title="Phím tắt: Alt + G">Giải</button>
-                    <button id="ms-toggle-btn" class="ms-btn ms-btn-icon" title="Thu gọn / Mở rộng" style="display:none;">▾</button>
+                <div class="ms-title-main">Giải bài tập</div>
+                <div class="ms-title-sub">Apple-Dra</div>
+                <button id="ms-min-btn" title="Thu gọn / Mở rộng">−</button>
+            </div>
+            <div class="ms-top-row">
+                <button id="ms-solve-btn" title="Phím tắt: Alt + G">Giải</button>
+                <div class="ms-img-box" title="Ảnh đại diện / Trạng thái màn hình">
+                    <img src="${LOGO_URL}" alt="Apple-Dra" />
+                    <span id="ms-dot" class="ms-dot" title="Chưa kết nối màn hình"></span>
                 </div>
             </div>
-            <div id="ms-body">
-                <div id="ms-result"></div>
-                <div id="ms-footer">
-                    <span>Phím tắt: <b>Alt + G</b></span>
-                    <button id="ms-copy-btn" class="ms-btn ms-btn-icon" style="width:auto;padding:0 8px;height:24px;font-size:11.5px;" title="Sao chép đáp án">📋 Copy</button>
-                </div>
+            <div id="ms-result">
+                <div class="ms-placeholder">• Appledra trùm cheat</div>
+            </div>
+            <div id="ms-footer">
+                <button id="ms-copy-btn" title="Sao chép đáp án">📋 Copy</button>
+                <div class="ms-support">Support: <a href="${FB_URL}" target="_blank" rel="noopener noreferrer">FB</a></div>
             </div>
         </div>
     `;
     document.body.appendChild(root);
 
+    const card = root.querySelector('#ms-card');
     const header = root.querySelector('#ms-header');
+    const minBtn = root.querySelector('#ms-min-btn');
     const dot = root.querySelector('#ms-dot');
     const solveBtn = root.querySelector('#ms-solve-btn');
-    const toggleBtn = root.querySelector('#ms-toggle-btn');
-    const bodyEl = root.querySelector('#ms-body');
     const resultEl = root.querySelector('#ms-result');
     const copyBtn = root.querySelector('#ms-copy-btn');
+
+    // Thu gọn / mở rộng
+    minBtn.addEventListener('click', () => {
+        const isMin = card.classList.toggle('minimized');
+        minBtn.textContent = isMin ? '+' : '−';
+    });
 
     // Kéo thả tự do
     let isDragging = false, startX = 0, startY = 0, initLeft = 0, initTop = 0;
@@ -243,16 +299,7 @@ window.initMistralSolver = function (config) {
     });
     window.addEventListener('mouseup', () => { isDragging = false; });
 
-    function setPanelOpen(open) {
-        bodyEl.classList.toggle('open', open);
-        toggleBtn.style.display = 'inline-flex';
-        toggleBtn.textContent = open ? '▴' : '▾';
-    }
-
-    toggleBtn.addEventListener('click', () => {
-        setPanelOpen(!bodyEl.classList.contains('open'));
-    });
-
+    // Copy đáp án
     copyBtn.addEventListener('click', () => {
         if (!lastRawAnswer) return;
         navigator.clipboard.writeText(lastRawAnswer).then(() => {
@@ -289,7 +336,6 @@ window.initMistralSolver = function (config) {
         }
     }
 
-    // Chụp màn hình và nén về tối đa 1280px để tiết kiệm token
     async function captureTabScreen() {
         if (!screenStream || !screenStream.active) {
             screenStream = await navigator.mediaDevices.getDisplayMedia({
@@ -326,7 +372,6 @@ window.initMistralSolver = function (config) {
         return canvas.toDataURL('image/jpeg', 0.7);
     }
 
-    // Gửi API kèm tự động chờ 2s và đổi model dự phòng khi gặp lỗi 429
     function sendRequest(dataUrl, attempt = 0) {
         const currentModel = MODELS[attempt % MODELS.length];
         const payload = {
@@ -359,9 +404,8 @@ window.initMistralSolver = function (config) {
             data: JSON.stringify(payload),
             timeout: 45000,
             onload: function (res) {
-                // Tự động thử lại tối đa 2 lần nếu gặp lỗi 429 (Rate limit)
                 if (res.status === 429 && attempt < 2) {
-                    resultEl.innerHTML = `<div class="ms-loading-box"><span class="ms-spinner"></span> Quá tải (429), tự động thử lại sau 2 giây...</div>`;
+                    resultEl.innerHTML = `<div class="ms-loading-box"><span class="ms-spinner"></span> Quá tải (429), tự thử lại sau 2 giây...</div>`;
                     setTimeout(() => sendRequest(dataUrl, attempt + 1), 2200);
                     return;
                 }
@@ -406,9 +450,13 @@ window.initMistralSolver = function (config) {
     async function handleSolve() {
         if (solveBtn.disabled) return;
         if (!API_KEY) {
-            setPanelOpen(true);
             resultEl.textContent = 'Chưa cấu hình API Key trong script Tampermonkey.';
             return;
+        }
+
+        if (card.classList.contains('minimized')) {
+            card.classList.remove('minimized');
+            minBtn.textContent = '−';
         }
 
         solveBtn.disabled = true;
@@ -416,7 +464,6 @@ window.initMistralSolver = function (config) {
 
         try {
             const dataUrl = await captureTabScreen();
-            setPanelOpen(true);
             solveBtn.innerHTML = '<span class="ms-spinner"></span> Giải...';
             resultEl.innerHTML = '<div class="ms-loading-box"><span class="ms-spinner"></span> Đang phân tích và giải đề...</div>';
             sendRequest(dataUrl, 0);
@@ -424,7 +471,6 @@ window.initMistralSolver = function (config) {
             root.style.display = 'block';
             solveBtn.disabled = false;
             solveBtn.textContent = 'Giải';
-            setPanelOpen(true);
             resultEl.textContent = `Đã hủy hoặc lỗi chụp màn hình: ${err.message}`;
         }
     }
