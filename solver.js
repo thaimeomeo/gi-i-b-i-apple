@@ -465,7 +465,7 @@ window.initMistralSolver = function (config) {
         try {
             const dataUrl = await captureTabScreen();
             solveBtn.innerHTML = '<span class="ms-spinner"></span> Giải...';
-            resultEl.innerHTML = '<div class="ms-loading-box"><span class="ms-spinner"></span> Đang phân tích và giải đề...</div>';
+            resultEl.innerHTML = '<div class="ms-loading-box"><span class="ms-spinner"></span> AppleMEOMEO đang nghĩ đợi bố tý</div>';
             sendRequest(dataUrl, 0);
         } catch (err) {
             root.style.display = 'block';
