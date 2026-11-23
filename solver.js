@@ -1,12 +1,11 @@
-window.initMistralSolver = function (config) {
+window.initMistralSolver = function (config = {}) {
     'use strict';
 
     if (window.top !== window.self) return;
 
-    const API_KEY = config.apiKey || '';
+    const API_URL = config.workerUrl || 'https://giaibai.appledragonvip.workers.dev/';
     const LOGO_URL = config.logoUrl || 'https://cdn-icons-png.flaticon.com/512/4712/4712035.png';
     const FB_URL = config.fbUrl || 'https://facebook.com';
-    const API_URL = 'https://api.mistral.ai/v1/chat/completions';
     const MODELS = ['pixtral-12b-2409', 'mistral-small-latest'];
 
     let screenStream = null;
@@ -304,13 +303,11 @@ window.initMistralSolver = function (config) {
         if (!lastRawAnswer) return;
         let textToCopy = lastRawAnswer;
 
-        // Chỉ lấy phần nội dung đứng sau chữ "Đáp án:" (nếu có)
         const match = textToCopy.match(/(?:\*\*)?Đáp án\s*:?(?:\*\*)?\s*([\s\S]*)$/i);
         if (match && match[1].trim()) {
             textToCopy = match[1];
         }
 
-        // Xóa bỏ toàn bộ dấu ** in đậm và khoảng trắng thừa
         textToCopy = textToCopy.replace(/\*\*/g, '').trim();
 
         navigator.clipboard.writeText(textToCopy).then(() => {
@@ -409,8 +406,7 @@ window.initMistralSolver = function (config) {
             anonymous: true,
             url: API_URL,
             headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${API_KEY}`
+                'Content-Type': 'application/json'
             },
             data: JSON.stringify(payload),
             timeout: 45000,
@@ -448,7 +444,7 @@ window.initMistralSolver = function (config) {
             onerror: function () {
                 solveBtn.disabled = false;
                 solveBtn.textContent = 'Giải';
-                resultEl.textContent = 'Lỗi kết nối đến Mistral AI.';
+                resultEl.textContent = 'Lỗi kết nối đến máy chủ Worker (kiểm tra lại @connect workers.dev).';
             },
             ontimeout: function () {
                 solveBtn.disabled = false;
@@ -460,8 +456,8 @@ window.initMistralSolver = function (config) {
 
     async function handleSolve() {
         if (solveBtn.disabled) return;
-        if (!API_KEY) {
-            resultEl.textContent = 'Chưa cấu hình API Key trong script Tampermonkey.';
+        if (!API_URL) {
+            resultEl.textContent = 'Chưa cấu hình đường dẫn Worker.';
             return;
         }
 
