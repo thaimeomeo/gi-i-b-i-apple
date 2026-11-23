@@ -9,6 +9,28 @@ window.initMistralSolver = function (config) {
     const API_URL = 'https://api.mistral.ai/v1/chat/completions';
     const MODELS = ['pixtral-12b-2409', 'mistral-small-latest'];
 
+    const SUBJECTS = [
+        { id: 'toan', label: 'Toán' },
+        { id: 'tin', label: 'Tin' },
+        { id: 'anh', label: 'Anh' },
+        { id: 'ly', label: 'Lý' },
+        { id: 'hoa', label: 'Hóa' }
+    ];
+
+    const SUBJECT_PROMPTS = {
+        toan: 'Bạn là trợ lý giải Toán THPT chính xác và siêu ngắn gọn bằng tiếng Việt. Nếu là trắc nghiệm, chỉ ghi thẳng **Đáp án:** đúng. Nếu là tự luận, chỉ dùng biến đổi sơ cấp phổ thông nối tiếp bằng dấu "=" (dùng LaTeX $...$ trên 1 dòng), tuyệt đối không dùng kiến thức đại học, rồi chốt **Đáp án:** ở dòng cuối.',
+        tin: 'Bạn là trợ lý Tin học THPT (C++, Python, thuật toán, lý thuyết Tin) chính xác và ngắn gọn bằng tiếng Việt. Nếu là câu trắc nghiệm hoặc tìm kết quả chạy chương trình, ghi ngắn gọn quá trình tính rồi chốt **Đáp án:**. Nếu là bài yêu cầu viết code, đưa ra đoạn code ngắn gọn, tối ưu nhất rồi chốt **Đáp án:** ở dòng cuối.',
+        anh: 'Bạn là trợ lý Tiếng Anh THPT chính xác và siêu ngắn gọn. Nếu là câu trắc nghiệm, điền từ, sửa lỗi sai hoặc sắp xếp câu, giải thích ngữ pháp/từ vựng cực ngắn (tối đa 1 dòng bằng tiếng Việt) rồi chốt thẳng **Đáp án:** ở dòng cuối.',
+        ly: 'Bạn là trợ lý Vật Lý THPT chính xác và ngắn gọn bằng tiếng Việt. Nếu là câu lý thuyết/trắc nghiệm, chốt thẳng **Đáp án:**. Nếu là bài tập tính toán, ghi ngắn gọn công thức (dùng LaTeX $...$), chú ý đổi đơn vị chuẩn SI, thay số rồi chốt **Đáp án:** ở dòng cuối.',
+        hoa: 'Bạn là trợ lý Hóa học THPT chính xác và ngắn gọn bằng tiếng Việt. Nếu là câu lý thuyết/trắc nghiệm, chốt thẳng **Đáp án:**. Nếu là bài tập tính toán, viết phương trình hóa học đã cân bằng, tính số mol ngắn gọn (dùng LaTeX $...$) rồi chốt **Đáp án:** ở dòng cuối.'
+    };
+
+    let currentSubject = 'toan';
+    try {
+        const saved = localStorage.getItem('ms_selected_subject');
+        if (saved && SUBJECT_PROMPTS[saved]) currentSubject = saved;
+    } catch (e) {}
+
     let screenStream = null;
     let captureVideo = null;
     let lastRawAnswer = '';
@@ -19,7 +41,7 @@ window.initMistralSolver = function (config) {
     katexCss.href = 'https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css';
     document.head.appendChild(katexCss);
 
-    // CSS giao diện theo bố cục mới
+    // CSS giao diện
     const style = document.createElement('style');
     style.textContent = `
         #ms-root {
@@ -42,7 +64,7 @@ window.initMistralSolver = function (config) {
             padding: 16px;
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 10px;
             position: relative;
         }
         #ms-header {
@@ -150,6 +172,35 @@ window.initMistralSolver = function (config) {
             box-shadow: 0 0 8px #10b981;
         }
 
+        /* Hàng chọn môn học */
+        .ms-subject-row {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 6px;
+        }
+        .ms-subj-btn {
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.06);
+            color: #cbd5e1;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 6px 0;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            text-align: center;
+        }
+        .ms-subj-btn:hover {
+            background: rgba(255, 255, 255, 0.14);
+            color: #fff;
+        }
+        .ms-subj-btn.active {
+            background: linear-gradient(135deg, #f97316, #ea580c);
+            border-color: rgba(251, 146, 60, 0.6);
+            color: #ffffff;
+            box-shadow: 0 2px 8px rgba(234, 88, 12, 0.35);
+        }
+
         /* Khung nội dung lớn ở giữa */
         #ms-result {
             min-height: 120px;
@@ -207,6 +258,7 @@ window.initMistralSolver = function (config) {
 
         /* Trạng thái thu gọn */
         #ms-card.minimized .ms-top-row,
+        #ms-card.minimized .ms-subject-row,
         #ms-card.minimized #ms-result,
         #ms-card.minimized #ms-footer {
             display: none;
@@ -234,7 +286,11 @@ window.initMistralSolver = function (config) {
     `;
     document.head.appendChild(style);
 
-    // Cấu trúc HTML khớp hình vẽ
+    const subjectButtonsHtml = SUBJECTS.map(s =>
+        `<button class="ms-subj-btn${s.id === currentSubject ? ' active' : ''}" data-subject="${s.id}">${s.label}</button>`
+    ).join('');
+
+    // Cấu trúc HTML
     const root = document.createElement('div');
     root.id = 'ms-root';
     root.innerHTML = `
@@ -250,6 +306,9 @@ window.initMistralSolver = function (config) {
                     <img src="${LOGO_URL}" alt="Apple-Dra" />
                     <span id="ms-dot" class="ms-dot" title="Chưa kết nối màn hình"></span>
                 </div>
+            </div>
+            <div class="ms-subject-row" id="ms-subject-row">
+                ${subjectButtonsHtml}
             </div>
             <div id="ms-result">
                 <div class="ms-placeholder">• Appledra trùm cheat</div>
@@ -267,8 +326,21 @@ window.initMistralSolver = function (config) {
     const minBtn = root.querySelector('#ms-min-btn');
     const dot = root.querySelector('#ms-dot');
     const solveBtn = root.querySelector('#ms-solve-btn');
+    const subjectRow = root.querySelector('#ms-subject-row');
     const resultEl = root.querySelector('#ms-result');
     const copyBtn = root.querySelector('#ms-copy-btn');
+
+    // Chọn môn học
+    subjectRow.addEventListener('click', (e) => {
+        const btn = e.target.closest('.ms-subj-btn');
+        if (!btn) return;
+        currentSubject = btn.dataset.subject;
+        subjectRow.querySelectorAll('.ms-subj-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        try {
+            localStorage.setItem('ms_selected_subject', currentSubject);
+        } catch (err) {}
+    });
 
     // Thu gọn / mở rộng
     minBtn.addEventListener('click', () => {
@@ -299,18 +371,16 @@ window.initMistralSolver = function (config) {
     });
     window.addEventListener('mouseup', () => { isDragging = false; });
 
-    // Copy chỉ lấy phần đáp án, tự động bỏ "**Đáp án:**" và dấu "**"
+    // Copy chỉ lấy phần đáp án
     copyBtn.addEventListener('click', () => {
         if (!lastRawAnswer) return;
         let textToCopy = lastRawAnswer;
 
-        // Chỉ lấy phần nội dung đứng sau chữ "Đáp án:" (nếu có)
         const match = textToCopy.match(/(?:\*\*)?Đáp án\s*:?(?:\*\*)?\s*([\s\S]*)$/i);
         if (match && match[1].trim()) {
             textToCopy = match[1];
         }
 
-        // Xóa bỏ toàn bộ dấu ** in đậm và khoảng trắng thừa
         textToCopy = textToCopy.replace(/\*\*/g, '').trim();
 
         navigator.clipboard.writeText(textToCopy).then(() => {
@@ -385,6 +455,9 @@ window.initMistralSolver = function (config) {
 
     function sendRequest(dataUrl, attempt = 0) {
         const currentModel = MODELS[attempt % MODELS.length];
+        const subjectObj = SUBJECTS.find(s => s.id === currentSubject) || SUBJECTS[0];
+        const systemPrompt = SUBJECT_PROMPTS[currentSubject] || SUBJECT_PROMPTS.toan;
+
         const payload = {
             model: currentModel,
             max_tokens: 2048,
@@ -392,12 +465,12 @@ window.initMistralSolver = function (config) {
             messages: [
                 {
                     role: 'system',
-                    content: 'Bạn là trợ lý giải bài tập phổ thông (Toán, Tiếng Anh, Lý, Hóa...) chính xác và siêu ngắn gọn bằng tiếng Việt. Nếu là câu trắc nghiệm hoặc sắp xếp câu, chỉ ghi thẳng **Đáp án:** đúng. Nếu là bài tự luận/Toán, chỉ dùng biến đổi sơ cấp phổ thông nối tiếp bằng dấu "=" (dùng LaTeX $...$ trên 1 dòng), tuyệt đối không dùng kiến thức đại học, rồi chốt **Đáp án:** ở dòng cuối.'
+                    content: systemPrompt
                 },
                 {
                     role: 'user',
                     content: [
-                        { type: 'text', text: 'Đọc câu hỏi trong ảnh và đưa ra đáp án chính xác, ngắn gọn nhất.' },
+                        { type: 'text', text: `Đọc câu hỏi môn ${subjectObj.label} trong ảnh và đưa ra đáp án chính xác, ngắn gọn nhất.` },
                         { type: 'image_url', image_url: { url: dataUrl } }
                     ]
                 }
@@ -475,8 +548,9 @@ window.initMistralSolver = function (config) {
 
         try {
             const dataUrl = await captureTabScreen();
+            const subjectObj = SUBJECTS.find(s => s.id === currentSubject) || SUBJECTS[0];
             solveBtn.innerHTML = '<span class="ms-spinner"></span> Giải...';
-            resultEl.innerHTML = '<div class="ms-loading-box"><span class="ms-spinner"></span> AppleMEOMEO đang nghĩ đợi bố tý</div>';
+            resultEl.innerHTML = `<div class="ms-loading-box"><span class="ms-spinner"></span> AppleMEOMEO đang giải ${subjectObj.label}, đợi bố tý...</div>`;
             sendRequest(dataUrl, 0);
         } catch (err) {
             root.style.display = 'block';
