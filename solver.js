@@ -141,11 +141,10 @@ window.initMistralSolver = function (config) {
             cursor: not-allowed;
         }
         .ms-img-box {
-            width: 96px;
-            border-radius: 14px;
-            background: rgba(255, 255, 255, 0.06);
-            border: 1px solid rgba(255, 255, 255, 0.14);
-            overflow: hidden;
+            width: 72px;
+            background: transparent;
+            border: none;
+            overflow: visible;
             position: relative;
             display: flex;
             align-items: center;
@@ -154,7 +153,8 @@ window.initMistralSolver = function (config) {
         .ms-img-box img {
             width: 100%;
             height: 100%;
-            object-fit: cover;
+            object-fit: contain;
+            filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.45));
         }
         .ms-dot {
             position: absolute;
