@@ -3,10 +3,9 @@ window.initMistralSolver = function (config) {
 
     if (window.top !== window.self) return;
 
-    const API_KEY = config.apiKey || '';
     const LOGO_URL = config.logoUrl || 'https://cdn-icons-png.flaticon.com/512/4712/4712035.png';
     const FB_URL = config.fbUrl || 'https://facebook.com';
-    const API_URL = 'https://api.mistral.ai/v1/chat/completions';
+    const API_URL = config.apiUrl || 'https://giaibaiai.gokublack2k55.workers.dev/';
     const MODELS = ['pixtral-12b-2409', 'mistral-small-latest'];
 
     const SUBJECTS = [
@@ -19,7 +18,7 @@ window.initMistralSolver = function (config) {
 
     const SUBJECT_PROMPTS = {
         toan: 'Bạn là trợ lý giải Toán THPT chính xác và siêu ngắn gọn bằng tiếng Việt. Nếu là trắc nghiệm, chỉ ghi thẳng **Đáp án:** đúng. Nếu là tự luận, chỉ dùng biến đổi sơ cấp phổ thông nối tiếp bằng dấu "=" (dùng LaTeX $...$ trên 1 dòng), tuyệt đối không dùng kiến thức đại học, rồi chốt **Đáp án:** ở dòng cuối.',
-        tin: 'Bạn là trợ lý Tin học THPT (C++, Python, thuật toán, lý thuyết Tin) chính xác và ngắn gọn bằng tiếng Việt. Nếu là câu trắc nghiệm hoặc tìm kết quả chạy chương trình, ghi ngắn gọn quá trình tính rồi chốt **Đáp án:**. Nếu là bài yêu cầu viết code, đưa ra đoạn code ngắn gọn, tối ưu nhất rồi chốt **Đáp án:** ở dòng cuối.',
+        tin: 'Bạn là trợ lý Tin học THPT (C++, Python, thuật toán, lý thuyết Tin) chính xác và ngắn gọn bằng tiếng Việt. Nếu là trắc nghiệm/tìm kết quả, ghi ngắn gọn rồi chốt **Đáp án:**. Nếu là bài viết code, giải thích ý tưởng tối đa 2 dòng rồi ghi **Đáp án:** và đặt toàn bộ code hoàn chỉnh ngay bên dưới.',
         anh: 'Bạn là trợ lý Tiếng Anh THPT chính xác và siêu ngắn gọn. Nếu là câu trắc nghiệm, điền từ, sửa lỗi sai hoặc sắp xếp câu, giải thích ngữ pháp/từ vựng cực ngắn (tối đa 1 dòng bằng tiếng Việt) rồi chốt thẳng **Đáp án:** ở dòng cuối.',
         ly: 'Bạn là trợ lý Vật Lý THPT chính xác và ngắn gọn bằng tiếng Việt. Nếu là câu lý thuyết/trắc nghiệm, chốt thẳng **Đáp án:**. Nếu là bài tập tính toán, ghi ngắn gọn công thức (dùng LaTeX $...$), chú ý đổi đơn vị chuẩn SI, thay số rồi chốt **Đáp án:** ở dòng cuối.',
         hoa: 'Bạn là trợ lý Hóa học THPT chính xác và ngắn gọn bằng tiếng Việt. Nếu là câu lý thuyết/trắc nghiệm, chốt thẳng **Đáp án:**. Nếu là bài tập tính toán, viết phương trình hóa học đã cân bằng, tính số mol ngắn gọn (dùng LaTeX $...$) rồi chốt **Đáp án:** ở dòng cuối.'
@@ -114,7 +113,7 @@ window.initMistralSolver = function (config) {
             align-items: stretch;
             justify-content: space-between;
             gap: 12px;
-            height: 52px;
+            height: 56px;
         }
         #ms-solve-btn {
             flex: 1;
@@ -141,7 +140,7 @@ window.initMistralSolver = function (config) {
             cursor: not-allowed;
         }
         .ms-img-box {
-            width: 72px;
+            width: 76px;
             background: transparent;
             border: none;
             overflow: visible;
@@ -154,12 +153,13 @@ window.initMistralSolver = function (config) {
             width: 100%;
             height: 100%;
             object-fit: contain;
+            transform: scale(1.2);
             filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.45));
         }
         .ms-dot {
             position: absolute;
-            top: 5px;
-            right: 5px;
+            top: 2px;
+            right: 2px;
             width: 9px;
             height: 9px;
             border-radius: 50%;
@@ -204,7 +204,7 @@ window.initMistralSolver = function (config) {
         /* Khung nội dung lớn ở giữa */
         #ms-result {
             min-height: 120px;
-            max-height: 300px;
+            max-height: 380px;
             overflow-y: auto;
             overflow-x: auto;
             background: rgba(2, 6, 23, 0.65);
@@ -371,7 +371,7 @@ window.initMistralSolver = function (config) {
     });
     window.addEventListener('mouseup', () => { isDragging = false; });
 
-    // Copy chỉ lấy phần đáp án
+    // Copy chỉ lấy phần đáp án, tự động bỏ khung code ``` và dấu **
     copyBtn.addEventListener('click', () => {
         if (!lastRawAnswer) return;
         let textToCopy = lastRawAnswer;
@@ -381,7 +381,11 @@ window.initMistralSolver = function (config) {
             textToCopy = match[1];
         }
 
-        textToCopy = textToCopy.replace(/\*\*/g, '').trim();
+        textToCopy = textToCopy
+            .replace(/```[a-zA-Z]*\n?/g, '')
+            .replace(/```/g, '')
+            .replace(/\*\*/g, '')
+            .trim();
 
         navigator.clipboard.writeText(textToCopy).then(() => {
             copyBtn.textContent = '✓ Đã chép';
@@ -460,7 +464,7 @@ window.initMistralSolver = function (config) {
 
         const payload = {
             model: currentModel,
-            max_tokens: 2048,
+            max_tokens: 4096,
             temperature: 0.1,
             messages: [
                 {
@@ -482,8 +486,7 @@ window.initMistralSolver = function (config) {
             anonymous: true,
             url: API_URL,
             headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${API_KEY}`
+                'Content-Type': 'application/json'
             },
             data: JSON.stringify(payload),
             timeout: 45000,
@@ -521,7 +524,7 @@ window.initMistralSolver = function (config) {
             onerror: function () {
                 solveBtn.disabled = false;
                 solveBtn.textContent = 'Giải';
-                resultEl.textContent = 'Lỗi kết nối đến Mistral AI.';
+                resultEl.textContent = 'Lỗi kết nối đến máy chủ Worker.';
             },
             ontimeout: function () {
                 solveBtn.disabled = false;
@@ -533,10 +536,6 @@ window.initMistralSolver = function (config) {
 
     async function handleSolve() {
         if (solveBtn.disabled) return;
-        if (!API_KEY) {
-            resultEl.textContent = 'Chưa cấu hình API Key trong script Tampermonkey.';
-            return;
-        }
 
         if (card.classList.contains('minimized')) {
             card.classList.remove('minimized');
